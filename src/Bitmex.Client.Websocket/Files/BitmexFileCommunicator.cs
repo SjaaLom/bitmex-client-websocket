@@ -11,16 +11,18 @@ namespace Bitmex.Client.Websocket.Files
 {
     public class BitmexFileCommunicator : IBitmexCommunicator
     {
-        private readonly Subject<string> _messageReceivedSubject = new Subject<string>();
+        private readonly Subject<ResponseMessage> _messageReceivedSubject = new Subject<ResponseMessage>();
 
-        public IObservable<string> MessageReceived => _messageReceivedSubject.AsObservable();
+        public IObservable<ResponseMessage> MessageReceived => _messageReceivedSubject.AsObservable();
         public IObservable<ReconnectionType> ReconnectionHappened => Observable.Empty<ReconnectionType>();
         public IObservable<DisconnectionType> DisconnectionHappened  => Observable.Empty<DisconnectionType>();
 
         public int ReconnectTimeoutMs { get; set; } = 60 * 1000;
         public int ErrorReconnectTimeoutMs { get; set; } = 60 * 1000;
+        public string Name { get; set; }
         public bool IsStarted { get; private set; }
         public bool IsRunning { get; private set; }
+        public Encoding MessageEncoding { get; set; }
 
         public string[] FileNames { get; set; }
         public string Delimiter { get; set; }
@@ -69,7 +71,7 @@ namespace Bitmex.Client.Websocket.Files
                     var message = ReadByDelimeter(stream, Delimiter);
                     while (message != null)
                     {
-                        _messageReceivedSubject.OnNext(message);
+                        _messageReceivedSubject.OnNext(ResponseMessage.TextMessage(message));
                         message = ReadByDelimeter(stream, Delimiter);
                     }
                 }

@@ -5,6 +5,8 @@ This is a C# implementation of the Bitmex websocket API found here:
 
 https://www.bitmex.com/app/wsAPI
 
+[Releases and breaking changes](https://github.com/Marfusios/bitmex-client-websocket/releases)
+
 ### License: 
     Apache License 2.0
 
@@ -14,7 +16,7 @@ https://www.bitmex.com/app/wsAPI
 * public and authenticated API
 * targeting .NET Standard 2.0 (.NET Core, Linux/MacOS compatible)
 * reactive extensions ([Rx.NET](https://github.com/Reactive-Extensions/Rx.NET))
-* integrated logging ([Serilog](https://serilog.net/))
+* integrated logging abstraction ([LibLog](https://github.com/damianh/LibLog))
 
 ### Usage
 
@@ -58,12 +60,12 @@ More usage examples:
 | Ping-Pong              |  ✔            |
 | Errors                 |  ✔            |
 | Subscribe              |  ✔            |
-| Unsubscribe            |                |
+| Unsubscribe            |  ✔            |
 | Announcement           |                |
 | Chat                   |                |
 | Connected              |                |
 | Funding                |                |
-| Instrument             |                |
+| Instrument             |  ✔            |
 | Insurance              |                |
 | Liquidation            |  ✔            |
 | Orderbook L2           |  ✔            |
@@ -86,7 +88,7 @@ More usage examples:
 | Affilate               |                |
 | Execution              |                |
 | Order                  |  ✔            |
-| Margin                 |                |
+| Margin                 |  ✔            |
 | Position               |  ✔            |
 | Private notifications  |                |
 | Transact               |                |

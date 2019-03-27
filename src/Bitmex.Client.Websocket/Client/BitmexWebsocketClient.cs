@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using Bitmex.Client.Websocket.Communicator;
 using Bitmex.Client.Websocket.Json;
+using Bitmex.Client.Websocket.Logging;
 using Bitmex.Client.Websocket.Requests;
 using Bitmex.Client.Websocket.Responses;
 using Bitmex.Client.Websocket.Responses.Books;
@@ -14,21 +15,31 @@ using Bitmex.Client.Websocket.Responses.TradeBins;
 using Bitmex.Client.Websocket.Responses.Wallets;
 using Bitmex.Client.Websocket.Validations;
 using Newtonsoft.Json.Linq;
-using Serilog;
+using Bitmex.Client.Websocket.Responses.Instruments;
+using Bitmex.Client.Websocket.Responses.Margins;
+using Websocket.Client;
 
 namespace Bitmex.Client.Websocket.Client
 {
+    /// <summary>
+    /// Bitmex websocket client.
+    /// Use method `Send()` to subscribe to channels.
+    /// And `Streams` to subscribe. 
+    /// </summary>
     public class BitmexWebsocketClient : IDisposable
     {
-        private readonly IBitmexCommunicator _communicator;
-        private readonly IDisposable _messageReceivedSubsciption;
+        private static readonly ILog Log = LogProvider.GetCurrentClassLogger();
 
+        private readonly IBitmexCommunicator _communicator;
+        private readonly IDisposable _messageReceivedSubscription;
+
+        /// <inheritdoc />
         public BitmexWebsocketClient(IBitmexCommunicator communicator)
         {
             BmxValidations.ValidateInput(communicator, nameof(communicator));
 
             _communicator = communicator;
-            _messageReceivedSubsciption = _communicator.MessageReceived.Subscribe(HandleMessage);
+            _messageReceivedSubscription = _communicator.MessageReceived.Subscribe(HandleMessage);
         }
 
         /// <summary>
@@ -41,7 +52,7 @@ namespace Bitmex.Client.Websocket.Client
         /// </summary>
         public void Dispose()
         {
-            _messageReceivedSubsciption?.Dispose();
+            _messageReceivedSubscription?.Dispose();
         }
 
         /// <summary>
@@ -82,12 +93,12 @@ namespace Bitmex.Client.Websocket.Client
             return $"[BMX WEBSOCKET CLIENT] {msg}";
         }
 
-        private void HandleMessage(string message)
+        private void HandleMessage(ResponseMessage message)
         {
             try
             {
                 bool handled;
-                var messageSafe = (message ?? string.Empty).Trim();
+                var messageSafe = (message.Text ?? string.Empty).Trim();
 
                 if (messageSafe.StartsWith("{"))
                 {
@@ -100,7 +111,7 @@ namespace Bitmex.Client.Websocket.Client
                 if (handled)
                     return;
 
-                Log.Warning(L($"Unhandled response:  '{messageSafe}'"));
+                Log.Warn(L($"Unhandled response:  '{messageSafe}'"));
             }
             catch (Exception e)
             {
@@ -134,8 +145,10 @@ namespace Bitmex.Client.Websocket.Client
                 QuoteResponse.TryHandle(response, Streams.QuoteSubject) ||
                 LiquidationResponse.TryHandle(response, Streams.LiquidationSubject) ||
                 PositionResponse.TryHandle(response, Streams.PositionSubject) ||
+                MarginResponse.TryHandle(response, Streams.MarginSubject) ||
                 OrderResponse.TryHandle(response, Streams.OrderSubject) ||
                 WalletResponse.TryHandle(response, Streams.WalletSubject) ||
+                InstrumentResponse.TryHandle(response, Streams.InstrumentSubject) ||
 
 
                 ErrorResponse.TryHandle(response, Streams.ErrorSubject) ||

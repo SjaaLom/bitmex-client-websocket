@@ -42,8 +42,8 @@ namespace Bitmex.Client.Websocket.Sample
             var url = BitmexValues.ApiWebsocketUrl;
             using (var communicator = new BitmexWebsocketCommunicator(url))
             {
+                communicator.Name = "Bitmex-1";
                 communicator.ReconnectTimeoutMs = (int)TimeSpan.FromMinutes(10).TotalMilliseconds;
-
                 communicator.ReconnectionHappened.Subscribe(type =>
                     Log.Information($"Reconnection happened, type: {type}"));
 
@@ -73,12 +73,13 @@ namespace Bitmex.Client.Websocket.Sample
         private static async Task SendSubscriptionRequests(BitmexWebsocketClient client)
         {
             await client.Send(new PingRequest());
-            //await client.Send(new BookSubscribeRequest("XBTUSD"));
+            await client.Send(new BookSubscribeRequest("XBTUSD"));
             await client.Send(new TradesSubscribeRequest("XBTUSD"));
             //await client.Send(new TradeBinSubscribeRequest("1m", "XBTUSD"));
             //await client.Send(new TradeBinSubscribeRequest("5m", "XBTUSD"));
             //await client.Send(new QuoteSubscribeRequest("XBTUSD"));
             //await client.Send(new LiquidationSubscribeRequest());
+            //await client.Send(new InstrumentSubscribeRequest("XBTUSD"));
 
             if (!string.IsNullOrWhiteSpace(API_SECRET))
                 await client.Send(new AuthenticationRequest(API_KEY, API_SECRET));
@@ -99,7 +100,11 @@ namespace Bitmex.Client.Websocket.Sample
 
 
             client.Streams.SubscribeStream.Subscribe(x =>
-                Log.Information($"Subscribed ({x.Success}) to {x.Subscribe}"));
+            {
+                Log.Information(x.IsSubscription
+                    ? $"Subscribed ({x.Success}) to {x.Subscribe}"
+                    : $"Unsubscribed ({x.Success}) from {x.Unsubscribe}");
+            });
 
             client.Streams.PongStream.Subscribe(x =>
                 Log.Information($"Pong received ({x.Message})"));
@@ -152,6 +157,26 @@ namespace Bitmex.Client.Websocket.Sample
                         $"Close: {x.Close}, Volume: {x.Volume}, Trades: {x.Trades}"))
             );
 
+            client.Streams.InstrumentStream.Subscribe(x =>
+            {
+                x.Data.ToList().ForEach(y =>
+                {
+                    Log.Information($"Instrument, {y.Symbol}, " +
+                                    $"price: {y.MarkPrice}, last: {y.LastPrice}, " +
+                                    $"mark: {y.MarkMethod}, fair: {y.FairMethod}, direction: {y.LastTickDirection}, " +
+                                    $"funding: {y.FundingRate} i: {y.IndicativeFundingRate} s: {y.FundingQuoteSymbol}");
+                });
+            });
+
+
+            // example of unsubscribe requests
+            //Task.Run(async () =>
+            //{
+            //    await Task.Delay(5000);
+            //    await client.Send(new BookSubscribeRequest("XBTUSD") {IsUnsubscribe = true});
+            //    await Task.Delay(5000);
+            //    await client.Send(new TradesSubscribeRequest() {IsUnsubscribe = true});
+            //});
         }
 
         private static void InitLogging()
